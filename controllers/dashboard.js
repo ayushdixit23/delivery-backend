@@ -114,6 +114,31 @@ exports.getdashboard = async (req, res) => {
 };
 
 //list of orders
+// exports.getallorders = async (req, res) => {
+//   const { id } = req.params;
+//   try {
+//     const user = await User.findById(id).populate({
+//       path: "deliveries",
+//       select:
+//         "phonenumber pickupaddress droppingaddress mode amount title orderId status marks data",
+//       options: {
+//         sort: { createdAt: -1 },
+//       },
+//     });
+
+//     if (user) {
+//       res.status(200).json({ deliveries: user?.deliveries, success: true });
+//     } else {
+//       res.status(404).json({ message: "User not found", success: false });
+//     }
+//   } catch (e) {
+//     console.log(e);
+//     res
+//       .status(400)
+//       .json({ message: "Something went wrong...", success: false });
+//   }
+// };
+
 exports.getallorders = async (req, res) => {
   const { id } = req.params;
   try {
@@ -126,18 +151,31 @@ exports.getallorders = async (req, res) => {
       },
     });
 
-    if (user) {
-      res.status(200).json({ deliveries: user?.deliveries, success: true });
-    } else {
-      res.status(404).json({ message: "User not found", success: false });
+    if (!user) {
+      return res.status(404).json({ message: "User not found", success: false });
     }
+
+    const orderIds = user.deliveries.map((delivery) => delivery.orderId);
+
+    const orders = await Order.find({ orderId: { $in: orderIds } }).select("orderId buyerId");
+
+    const customerIdMap = {};
+    orders.forEach((order) => {
+      customerIdMap[order.orderId] = order.buyerId;
+    });
+
+    const actualDeliveries = user.deliveries.map((delivery) => ({
+      ...delivery.toObject(),
+      customerId: customerIdMap[delivery.orderId],
+    }));
+    
+    res.status(200).json({ deliveries: actualDeliveries, success: true });
   } catch (e) {
     console.log(e);
-    res
-      .status(400)
-      .json({ message: "Something went wrong...", success: false });
+    res.status(400).json({ message: "Something went wrong...", success: false });
   }
 };
+
 
 //list of stock
 exports.getstock = async (req, res) => {
@@ -456,7 +494,8 @@ exports.startdelivery = async (req, res) => {
           }
 
           res.status(200).json({ success: true });
-        } else {
+        }
+        else {
           res
             .status(203)
             .json({ success: false, message: "Unable to start the delivery" });
