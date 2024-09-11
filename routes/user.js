@@ -56,7 +56,7 @@ router.post("/verifypic/:id/:dev/:mark", upload.single("image"), verifypic);
 router.post("/requestpayout/:id", requestpayout);
 
 router.post("/deliveryImageUpload/:id", upload.any(), deliveryImageUpload);
-router.post("/deliveryotpverify/:id/:orderId/:deliveryId", deliveryotpverify);
+router.post("/deliveryotpverify/:id/:orderId/:deliveryId/:delid", deliveryotpverify);
 router.post("/deliverysellerImageUpload/:id", upload.any(), deliverySellerImageUpload);
 router.post("/deliverysellerotpverify/:id", deliverySellerotpverify);
 

@@ -20,6 +20,7 @@ const Stock = require("../models/stock");
 const geolib = require("geolib");
 const { default: axios } = require("axios");
 const { sendMailToUser } = require("../helpers/mail");
+const Deluser = require("../models/deluser");
 
 require("dotenv").config();
 
@@ -1111,7 +1112,7 @@ exports.deliveryImageUpload = async (req, res) => {
 }
 
 exports.deliveryotpverify = async (req, res) => {
-  const { id, orderId, deliveryId } = req.params
+  const { id, orderId, deliveryId, delid } = req.params
   const { otp } = req.body;
   try {
     if (!otp) {
@@ -1130,7 +1131,6 @@ exports.deliveryotpverify = async (req, res) => {
       const currentTime = Date.now();
       const { code, time } = user.flashotp || {};
 
-
       if ((Number(code) === Number(otp)) && (currentTime <= time)) {
         user.flashotp = undefined
         await user.save()
@@ -1145,14 +1145,17 @@ exports.deliveryotpverify = async (req, res) => {
         delivery.status = "completed"
         await delivery.save()
 
-        res.status(200).json({ success: true, message: "Otp Validation Success!" })
+        const deluser = await Deluser.findById(delid)
 
+        deluser.currentdoing = null
+        await deluser.save()
+
+        res.status(200).json({ success: true, message: "Otp Validation Success!" })
       } else {
         res
           .status(203)
           .json({ message: "Otp Validation Failed!", success: false, otpSuccess: false });
       }
-
     }
   } catch (e) {
     console.log(e);
